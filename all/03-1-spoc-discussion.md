@@ -40,6 +40,119 @@ NOTICE
 http://coolshell.cn/tag/buddy
 ```
 
+###first fit in C
+
+	  1 #include <stdio.h>
+	  2
+	  3 #define MemMax 4096
+	  4 #define startaddr 0
+	  5
+	  6 struct node {
+	  7     unsigned int addr;
+	  8     unsigned int size;
+	  9     struct node *next;
+	 10 };
+	 11
+	 12 struct node freelist;
+	 13 struct node usedlist;
+	 14
+	 15 int adjustlist(struct node *used, unsigned int size)
+	 16 {
+	 17     if(!used) {
+	 18         return -1;
+	 19     }
+	 20
+	 21     struct node new;
+	 22     new.addr = used->addr + size;
+	 23     new.size = size;
+	 24     new.next = NULL;
+	 25     struct node *usedhead = &usedlist;
+	 26     while(usedhead)
+	 27         usedhead = usedhead->next;
+	 28     usedhead = &new;
+	 29
+	 30     used->addr = used->addr + size;
+	 31     used->size = used->size - size;
+	 32
+	 33 }
+	 34
+	 35 int first_fit(unsigned int size)
+	 36 {
+	 37     unsigned int fitaddr = 0, fitsize = 0;
+	 38
+	 39     if (size > MemMax)
+	 40         return -1;
+	 41     struct node *head = &freelist;
+	 42     for(;head != NULL; head = head->next) {
+	 43         if(head->size >= size) {
+	 44             fitaddr = head->addr;
+	 45             fitsize = head->size;
+	 46             break;
+	 47         }
+	 48     }
+	 49
+	 50     if(fitsize == size) {
+	 51         if(head == &freelist) {
+	 52             head->size = 0;
+	 53             return 0;
+	 54         }
+	 55
+	 56         struct node *pre = &freelist;
+	 57
+	 58         while(pre->next != head)
+	 59             pre = pre->next
+	 60         pre->next = head->next;
+	 61
+	 62         return 0;
+	 63     } else {
+	 64         adjustlist(head, size);
+	 65         return 0;
+	 66     }
+	 67 }
+	 68
+	 69 int free(struct node *useless)
+	 70 {
+	 71     if(!useless)
+	 72         return -1;
+	 73
+	 74     // delete from uselist
+	 75     struct node *iter = &uselist;
+	 76     while(iter->next != useless) {
+	 77         iter = iter->next;
+	 78     }
+	 79
+	 80     iter->next = useless->next;
+	 81
+	 82     // add to freelist
+	 83     iter = &freelist;
+	 84     while(iter) {
+	 85         if(iter->addr + iter->size == useless->addr) {
+	 86             iter->size += useless->size;
+	 87             return 0;
+	 88         }
+	 89         if(!iter->next)
+	 90             break;
+	 91         iter = iter->next;
+	 92     }
+	 93     iter->next = useless;
+	 94     useless->next = NULL;
+	 95     return 0;
+	 96
+	 97 }
+	 98
+	 99 int main()
+	100 {
+	101     freelist.addr = startaddr;
+	102     freelist.size = MemMax;
+	103     freelist.next = NULL;
+	104
+	105     int re = first_fit(512);
+	106
+	107     printf("%d\n%d\n%d\n%d\n", re, usedlist.addr, usedlist.size, freelist.addr);
+	108
+	109     return 0;
+	110 }    
+
 --- 
 
 ## 扩展思考题
